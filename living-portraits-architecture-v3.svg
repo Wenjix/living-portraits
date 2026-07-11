@@ -1,0 +1,230 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1180" font-family="'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arr" markerWidth="11" markerHeight="11" refX="7.5" refY="3.5" orient="auto"><path d="M0,0 L8,3.5 L0,7 Z" fill="#7c8aa0"/></marker>
+    <marker id="arrG" markerWidth="11" markerHeight="11" refX="7.5" refY="3.5" orient="auto"><path d="M0,0 L8,3.5 L0,7 Z" fill="#34d399"/></marker>
+    <marker id="arrA" markerWidth="11" markerHeight="11" refX="7.5" refY="3.5" orient="auto"><path d="M0,0 L8,3.5 L0,7 Z" fill="#f5a524"/></marker>
+    <marker id="arrR" markerWidth="11" markerHeight="11" refX="7.5" refY="3.5" orient="auto"><path d="M0,0 L8,3.5 L0,7 Z" fill="#f87171"/></marker>
+    <marker id="arrC" markerWidth="11" markerHeight="11" refX="7.5" refY="3.5" orient="auto"><path d="M0,0 L8,3.5 L0,7 Z" fill="#22d3ee"/></marker>
+    <style>
+      .mono { font-family:'Consolas','SF Mono',Menlo,monospace; }
+      .title { font-size:32px; font-weight:700; fill:#d8a657; }
+      .titlesub { font-size:19px; font-weight:600; fill:#e6edf3; }
+      .note { font-size:13px; fill:#aab8c8; }
+      .zoneh { font-size:13px; font-weight:700; letter-spacing:0.5px; }
+      .lpill { font-size:10.5px; font-weight:700; fill:#0a0e14; }
+      .ct { font-size:13.5px; font-weight:700; fill:#f1f5f9; }
+      .body { font-size:11.5px; fill:#c4d0dd; }
+      .key { font-size:11.5px; fill:#d7e0ea; }
+      .muted { font-size:10.5px; fill:#8896a8; }
+      .chip { font-size:10.5px; font-weight:700; }
+      .flow { font-size:11px; font-weight:600; fill:#9fb0c4; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1920" height="1180" fill="#0a0e14"/>
+
+  <!-- HEADER -->
+  <text x="34" y="50" class="title">LIVING PORTRAITS<tspan class="titlesub" dx="12">/ Architecture v3 (gen live local; 6 modules in; integrating)</tspan></text>
+  <text x="36" y="78" class="note">Self-aware theatrical portraits on two LED panels, free + fully local on supercommons2. Deterministic PLAYER performs pre-baked beats; async qwen3 STAGE-MANAGER composes them; a local generative pipeline backfills the art. Nothing runs in realtime.</text>
+  <text x="36" y="97" class="note">Legend: <tspan fill="#34d399" font-weight="700">green = built &amp; running</tspan> &#183; <tspan fill="#67e8f9" font-weight="700">cyan = built + verified, wiring/deploy next</tspan> &#183; <tspan fill="#f5a524" font-weight="700">amber = next phase</tspan> &#183; <tspan fill="#c4b5fd" font-weight="700">violet = contract</tspan> &#183; <tspan fill="#f87171" font-weight="700">red = pending (off-site)</tspan>.   Reality: first portrait RENDERED locally (SD1.5 cached on SC2) &#183; 6 modules built+verified &#183; integration team wiring now &#183; SC2 dep-install + LED mapping pending.</text>
+
+  <!-- ============ ZONE 1: INPUTS / SIGNALS ============ -->
+  <rect x="32" y="116" width="1480" height="96" rx="12" fill="#0c1118" stroke="#2b3b52" stroke-dasharray="5 4"/>
+  <text x="48" y="138" class="zoneh" fill="#7cc0ff">INPUTS / SIGNALS  (director/signals.py + director/feeds.py)  &#183;  the "important data" the world reacts to</text>
+  <rect x="48" y="150" width="300" height="52" rx="8" fill="#101722" stroke="#34d399"/>
+  <text x="62" y="172" class="ct">Clock + part-of-day</text><text x="62" y="190" class="muted">morning / evening / the small hours</text>
+  <rect x="362" y="150" width="360" height="52" rx="8" fill="#101722" stroke="#34d399"/>
+  <text x="376" y="172" class="ct">Internal mood drift</text><text x="376" y="190" class="muted mono">data/mood.json &#183; persisted &#183; drifts each beat</text>
+  <rect x="736" y="150" width="728" height="52" rx="8" fill="#101722" stroke="#34d399"/>
+  <rect x="748" y="160" width="62" height="16" rx="8" fill="#34d399"/><text x="779" y="172" text-anchor="middle" class="lpill">WIRED</text>
+  <text x="822" y="172" class="ct">External feed</text><text x="822" y="190" class="muted mono">THE SIGNAL + Calendar + weather &#183; 30-min TTL cache &#183; offline-degrade to stub</text>
+
+  <path d="M772,212 L772,228" stroke="#34d399" stroke-width="2" marker-end="url(#arrG)"/>
+
+  <!-- ============ ZONE 2: DIRECTOR / BRAIN ============ -->
+  <rect x="32" y="230" width="1480" height="150" rx="12" fill="#0b0f17" stroke="#34557a" stroke-dasharray="6 4"/>
+  <text x="48" y="252" class="zoneh" fill="#9ecbff">DIRECTOR / BRAIN  (director/stage_manager.py)  &#183;  qwen3:8b via local Ollama &#183; format=json &#183; /no_think &#183; --loop 45s</text>
+  <text x="980" y="252" class="muted" fill="#6ee7b7">running; pauses only during a portrait render, then resumes</text>
+
+  <rect x="48" y="262" width="470" height="106" rx="9" fill="#15101f" stroke="#a78bfa" stroke-width="1.3"/>
+  <rect x="60" y="272" width="120" height="16" rx="8" fill="#a78bfa"/><text x="120" y="284" text-anchor="middle" class="lpill">CONTRACT</text>
+  <text x="60" y="312" class="ct" fill="#c4b5fd">Prompt library (prompts/)</text>
+  <text x="60" y="332" class="key mono">_stage-directives.md  &#183;  the 4th-wall rule</text>
+  <text x="60" y="350" class="muted mono">characters/phineas.md (A) &#183; seraphina.md (B)</text>
+
+  <rect x="534" y="262" width="470" height="106" rx="9" fill="#101722" stroke="#34d399"/>
+  <text x="548" y="286" class="ct">Compose beat</text>
+  <text x="548" y="308" class="body mono">signals + cast  -&gt;  qwen3  -&gt;  JSON beat</text>
+  <text x="548" y="328" class="body mono">schema: scene / A / B / bridge</text>
+  <text x="548" y="350" class="muted">action clamped to a fixed 7-verb vocabulary</text>
+
+  <rect x="1020" y="262" width="444" height="106" rx="9" fill="#101722" stroke="#34d399"/>
+  <rect x="1032" y="272" width="58" height="16" rx="8" fill="#34d399"/><text x="1061" y="284" text-anchor="middle" class="lpill">LOCAL</text>
+  <text x="1100" y="284" class="chip" fill="#34d399">on SC2</text>
+  <text x="1032" y="312" class="ct">Ollama &#183; qwen3:8b</text>
+  <text x="1032" y="332" class="body mono">127.0.0.1:11434 /api/chat</text>
+  <text x="1032" y="350" class="muted">GPU ~5GB &#183; unloaded during renders (ollama stop)</text>
+
+  <path d="M772,380 L772,396" stroke="#34d399" stroke-width="2" marker-end="url(#arrG)"/>
+  <text x="784" y="392" class="flow mono">beat JSON (atomic tmp + os.replace)</text>
+
+  <!-- ============ ZONE 3: CONTROL CHANNEL ============ -->
+  <rect x="32" y="398" width="1480" height="62" rx="12" fill="#0a1512" stroke="#2f5e4d" stroke-dasharray="6 4"/>
+  <text x="48" y="420" class="zoneh" fill="#6ee7b7">CONTROL CHANNEL  &#183;  the only seam between brain and stage</text>
+  <rect x="540" y="410" width="430" height="40" rx="8" fill="#101722" stroke="#34d399"/>
+  <text x="556" y="430" class="ct mono" fill="#6ee7b7">data/stage_state.json</text><text x="556" y="446" class="muted">player mtime-polls ~2Hz &#183; never reads a half-written file</text>
+
+  <path d="M772,460 L772,476" stroke="#34d399" stroke-width="2" marker-end="url(#arrG)"/>
+
+  <!-- ============ ZONE 4: PLAYER / STAGE ============ -->
+  <rect x="32" y="478" width="1480" height="150" rx="12" fill="#0b0f17" stroke="#34557a" stroke-dasharray="6 4"/>
+  <text x="48" y="500" class="zoneh" fill="#9ecbff">PLAYER / STAGE  (player.py)  &#183;  pygame, borderless 448x256 @ (0,0), top-most + windowless, console session 1</text>
+  <rect x="1290" y="488" width="208" height="16" rx="8" fill="#34d399"/><text x="1394" y="500" text-anchor="middle" class="lpill">SCREENSHOT-VERIFIED 05-26</text>
+
+  <rect x="48" y="510" width="300" height="104" rx="9" fill="#1a0f10" stroke="#d2aa5a"/>
+  <text x="62" y="534" class="ct" fill="#e0c07a">Stage A &#183; 256 x 256</text>
+  <text x="62" y="556" class="body">Phineas frame (maroon)</text>
+  <text x="62" y="576" class="muted">rect (0, 0, 256, 256)</text>
+  <text x="62" y="600" class="muted">portrait rendered; compositor wiring</text>
+
+  <rect x="364" y="510" width="300" height="104" rx="9" fill="#0c1c1e" stroke="#5ec8be"/>
+  <text x="378" y="534" class="ct" fill="#78ccc2">Stage B &#183; 192 x 192</text>
+  <text x="378" y="556" class="body">Seraphina frame (teal)</text>
+  <text x="378" y="576" class="muted">rect (256, 0, 192, 192)</text>
+  <text x="378" y="600" class="muted">smaller, brighter, quicker wit</text>
+
+  <rect x="680" y="510" width="400" height="104" rx="9" fill="#101722" stroke="#243349"/>
+  <text x="694" y="534" class="ct">Render mode</text>
+  <text x="694" y="556" class="body"><tspan fill="#34d399" font-weight="700">NOW:</tspan> text dev-view (name / action / aside)</text>
+  <text x="694" y="578" class="body"><tspan fill="#67e8f9" font-weight="700">WIRING:</tspan> stage_render = portrait + aside</text>
+  <text x="694" y="600" class="body"><tspan fill="#f5a524" font-weight="700">NEXT:</tspan> rig.py animates cutout (blink/gaze)</text>
+
+  <rect x="1096" y="510" width="368" height="104" rx="9" fill="#101722" stroke="#34d399"/>
+  <text x="1110" y="534" class="ct">Liveness + pinning</text>
+  <text x="1110" y="556" class="body">moving marker + wall clock</text>
+  <text x="1110" y="578" class="body mono">SetWindowPos HWND_TOPMOST</text>
+  <text x="1110" y="600" class="muted">windowless (pythonw) &#183; self-logs</text>
+
+  <path d="M772,628 L772,644" stroke="#34d399" stroke-width="2" marker-end="url(#arrG)"/>
+  <text x="784" y="640" class="flow mono">framebuffer region (0,0,448x256) of the 1920x1080 desktop</text>
+
+  <!-- ============ ZONE 5: OUTPUT / EDGE ============ -->
+  <rect x="32" y="646" width="1480" height="86" rx="12" fill="#0c1118" stroke="#2b3b52" stroke-dasharray="5 4"/>
+  <text x="48" y="668" class="zoneh" fill="#7cc0ff">OUTPUT / EDGE  &#183;  desktop framebuffer -&gt; LED sending card -&gt; panels</text>
+  <rect x="48" y="678" width="360" height="44" rx="8" fill="#101722" stroke="#34d399"/>
+  <rect x="60" y="685" width="62" height="15" rx="7" fill="#34d399"/><text x="91" y="697" text-anchor="middle" class="lpill">VERIFIED</text>
+  <text x="132" y="697" class="key">Framebuffer (0,0,448x256)</text><text x="62" y="715" class="muted">screenshot-verified: stages render correct here</text>
+  <path d="M408,700 L452,700" stroke="#7c8aa0" stroke-width="1.8" marker-end="url(#arr)"/>
+  <rect x="456" y="678" width="380" height="44" rx="8" fill="#0c131d" stroke="#1f2a3a"/>
+  <text x="470" y="698" class="key">LED sending card (Novastar / Colorlight)</text><text x="470" y="715" class="muted">grabs the region, maps each sub-rect to a panel</text>
+  <path d="M836,700 L880,700" stroke="#7c8aa0" stroke-width="1.8" marker-end="url(#arr)"/>
+  <rect x="884" y="678" width="340" height="44" rx="8" fill="#101722" stroke="#f87171" stroke-width="1.4"/>
+  <rect x="896" y="686" width="118" height="16" rx="8" fill="#f87171"/><text x="955" y="698" text-anchor="middle" class="lpill">MAPPING PENDING</text>
+  <text x="1020" y="699" class="key">Panel A 256&#178; + Panel B 192&#178;</text>
+  <text x="896" y="717" class="muted">only the physical card grab is unconfirmed (Ray off-site)</text>
+
+  <!-- ============ ZONE 6: GENERATIVE PIPELINE ============ -->
+  <rect x="32" y="750" width="1480" height="252" rx="12" fill="#100a14" stroke="#5b4a7a" stroke-dasharray="6 4"/>
+  <text x="48" y="772" class="zoneh" fill="#c4b5fd">GENERATIVE PIPELINE  &#183;  offline / async backfill  &#183;  6 modules BUILT + verified; producer + wiring in progress</text>
+  <text x="430" y="772" class="muted">runs detached + local on the 2080 Ti, slow is fine (not realtime)</text>
+
+  <rect x="48" y="786" width="150" height="86" rx="9" fill="#101722" stroke="#34d399"/>
+  <text x="62" y="808" class="ct">prompts/</text><text x="62" y="828" class="body">characters/*</text><text x="62" y="848" class="muted">theme + persona</text><text x="62" y="864" class="muted">(reused)</text>
+  <path d="M198,829 L212,829" stroke="#34d399" stroke-width="2" marker-end="url(#arrG)"/>
+
+  <rect x="214" y="786" width="232" height="86" rx="9" fill="#0c1f17" stroke="#34d399" stroke-width="1.8"/>
+  <rect x="226" y="796" width="118" height="16" rx="8" fill="#34d399"/><text x="285" y="808" text-anchor="middle" class="lpill">RENDERED &#183; LOCAL</text>
+  <text x="226" y="834" class="ct">generate.py &#183; SD1.5</text><text x="226" y="853" class="body mono">~4GB cached on SC2</text><text x="226" y="868" class="muted">first Phineas portrait done</text>
+  <path d="M446,829 L460,829" stroke="#34d399" stroke-width="2" marker-end="url(#arrG)"/>
+
+  <rect x="462" y="786" width="198" height="86" rx="9" fill="#08171b" stroke="#22d3ee"/>
+  <rect x="474" y="796" width="46" height="16" rx="8" fill="#22d3ee"/><text x="497" y="808" text-anchor="middle" class="lpill">BUILT</text>
+  <text x="474" y="834" class="ct" fill="#9fe6f5">SAM segment</text><text x="474" y="853" class="body">cutout + bg plate</text><text x="474" y="868" class="muted">segment.py &#183; install SAM on SC2</text>
+  <path d="M660,829 L674,829" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrC)"/>
+
+  <rect x="676" y="786" width="190" height="86" rx="9" fill="#08171b" stroke="#22d3ee"/>
+  <rect x="688" y="796" width="46" height="16" rx="8" fill="#22d3ee"/><text x="711" y="808" text-anchor="middle" class="lpill">BUILT</text>
+  <text x="688" y="834" class="ct" fill="#9fe6f5">rig spec + rig</text><text x="688" y="853" class="body">eyes/mouth/head</text><text x="688" y="868" class="muted">rig_spec.py done; rig.py building</text>
+  <path d="M866,829 L880,829" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrC)"/>
+
+  <rect x="882" y="786" width="218" height="86" rx="9" fill="#1a1208" stroke="#f5a524"/>
+  <rect x="894" y="796" width="42" height="16" rx="8" fill="#f5a524"/><text x="915" y="808" text-anchor="middle" class="lpill">NEXT</text>
+  <text x="894" y="834" class="ct" fill="#f5cf8a">img2vid + RIFE</text><text x="894" y="853" class="body">Hunyuan / Wan + interp</text><text x="894" y="868" class="muted">walk + transition bridges</text>
+  <path d="M1100,829 L1114,829" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrC)"/>
+
+  <rect x="1116" y="786" width="200" height="86" rx="9" fill="#08171b" stroke="#22d3ee" stroke-width="1.6"/>
+  <rect x="1128" y="796" width="46" height="16" rx="8" fill="#22d3ee"/><text x="1151" y="808" text-anchor="middle" class="lpill">BUILT</text>
+  <text x="1128" y="834" class="ct" fill="#9fe6f5">verify gate</text><text x="1128" y="852" class="muted">SSIM + loopable</text><text x="1128" y="868" class="muted">verify.py &#183; +InsightFace on SC2</text>
+  <path d="M1316,829 L1330,829" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrC)"/>
+
+  <rect x="1332" y="786" width="132" height="86" rx="9" fill="#08171b" stroke="#22d3ee"/>
+  <rect x="1344" y="796" width="46" height="16" rx="8" fill="#22d3ee"/><text x="1367" y="808" text-anchor="middle" class="lpill">BUILT</text>
+  <text x="1344" y="836" class="ct" fill="#9fe6f5">CLIP LIB</text><text x="1344" y="855" class="muted">graph + player</text><text x="1344" y="870" class="muted">clip_graph.py</text>
+
+  <!-- integration + tts row -->
+  <rect x="48" y="896" width="700" height="88" rx="9" fill="#0c1410" stroke="#34d399" stroke-dasharray="4 3"/>
+  <rect x="60" y="906" width="150" height="16" rx="8" fill="#f5a524"/><text x="135" y="918" text-anchor="middle" class="lpill">INTEGRATION (now)</text>
+  <text x="60" y="944" class="ct">producer + compositor + rig runtime (lp-integrate-3e7a)</text>
+  <text x="60" y="964" class="body mono">orchestrate.py (gen->segment->rig->verify->clip lib) &#183; stage_render.py (portrait+aside) &#183; rig.py</text>
+  <text x="60" y="980" class="muted">team building locally now; conductor wires into player.py + deploys to SC2</text>
+
+  <rect x="764" y="896" width="320" height="88" rx="9" fill="#08171b" stroke="#22d3ee" stroke-dasharray="4 3"/>
+  <rect x="776" y="906" width="46" height="16" rx="8" fill="#22d3ee"/><text x="799" y="918" text-anchor="middle" class="lpill">BUILT</text>
+  <text x="776" y="944" class="ct" fill="#9fe6f5">Spoken asides (tts.py)</text>
+  <text x="776" y="964" class="body mono">Piper / Kokoro + visemes</text>
+  <text x="776" y="980" class="muted">install Piper on SC2 to voice it</text>
+
+  <path d="M1398,786 L1398,656 L1300,656 L1300,628" stroke="#22d3ee" stroke-width="1.6" fill="none" stroke-dasharray="5 4" marker-end="url(#arrC)"/>
+  <text x="1130" y="650" class="flow" fill="#67e8f9">clips -&gt; player (action mapping)</text>
+
+  <!-- ============ RIGHT RAIL: HOST &amp; OPS ============ -->
+  <rect x="1532" y="116" width="356" height="886" rx="12" fill="#0c1014" stroke="#2b3b52" stroke-dasharray="5 4"/>
+  <text x="1548" y="138" class="zoneh" fill="#b8c4d4">HOST &amp; OPS  (supercommons2)</text>
+
+  <rect x="1548" y="150" width="324" height="116" rx="9" fill="#101722" stroke="#34d399"/>
+  <rect x="1560" y="160" width="58" height="16" rx="8" fill="#34d399"/><text x="1589" y="172" text-anchor="middle" class="lpill">LOCAL</text>
+  <text x="1560" y="198" class="ct">SC2 box</text>
+  <text x="1560" y="218" class="body">i9-9900K &#183; 64 GB &#183; RTX 2080 Ti 11 GB</text>
+  <text x="1560" y="238" class="muted">shared with inference-eng catalog</text>
+  <text x="1560" y="258" class="muted mono" fill="#5b6b7d">immer@100.123.185.12 &#183; Win 11 26200</text>
+
+  <rect x="1548" y="276" width="324" height="86" rx="9" fill="#101722" stroke="#34d399"/>
+  <text x="1564" y="300" class="ct">Local models (no cloud)</text>
+  <text x="1564" y="322" class="body mono">qwen3:8b (director) &#183; SD1.5 (gen)</text>
+  <text x="1564" y="342" class="muted">+ install SAM / InsightFace / Piper next</text>
+
+  <rect x="1548" y="372" width="324" height="132" rx="9" fill="#101722" stroke="#34d399"/>
+  <text x="1564" y="396" class="ct">Scheduled tasks (Win, /IT session 1)</text>
+  <text x="1564" y="418" class="body mono">lp-player    pinned stage (live)</text>
+  <text x="1564" y="438" class="body mono">lp-director  beat loop (live)</text>
+  <text x="1564" y="458" class="body mono">lp-gen       render (done, model cached)</text>
+  <text x="1564" y="478" class="key mono"><tspan fill="#67e8f9">lp-watchdog  built, DEPLOY next</tspan></text>
+  <text x="1564" y="496" class="muted">at-logon triggers = reboot-survivable</text>
+
+  <rect x="1548" y="514" width="324" height="86" rx="9" fill="#101722" stroke="#34d399"/>
+  <text x="1564" y="538" class="ct">Python venvs</text>
+  <text x="1564" y="560" class="key"><tspan fill="#34d399" font-weight="700">.venv</tspan> <tspan class="muted">pygame &#183; opencv &#183; numpy &#183; ffmpeg</tspan></text>
+  <text x="1564" y="582" class="key"><tspan fill="#34d399" font-weight="700">.venv-gen</tspan> <tspan class="muted">torch 2.5.1+cu121 &#183; diffusers</tspan></text>
+
+  <rect x="1548" y="610" width="324" height="86" rx="9" fill="#0c1014" stroke="#334155"/>
+  <text x="1564" y="634" class="ct" fill="#9ecbff">Ops resilience (learned 05-26)</text>
+  <text x="1564" y="654" class="muted">long jobs = DETACHED tasks (survive link</text>
+  <text x="1564" y="672" class="muted">drops) + tolerant polling. Link fix:</text>
+  <text x="1564" y="690" class="muted mono" fill="#67e8f9">tailscale down; up  (no elevation)</text>
+
+  <rect x="1548" y="706" width="324" height="92" rx="9" fill="#0c1014" stroke="#334155"/>
+  <text x="1564" y="730" class="ct" fill="#9ecbff">Download lesson</text>
+  <text x="1564" y="750" class="muted">SDXL 13GB snapshot kept stalling on SC2's</text>
+  <text x="1564" y="768" class="muted">flaky HF link; pivoted to SD1.5 (~4GB) -</text>
+  <text x="1564" y="786" class="muted">right-sized for 256/192 panels, landed clean.</text>
+
+  <text x="1548" y="824" class="muted">Self-contained: runtime needs no jtole +</text>
+  <text x="1548" y="842" class="muted">no cloud once deps are local on SC2. Feeds</text>
+  <text x="1548" y="860" class="muted">degrade to local cache/stub when offline.</text>
+
+  <!-- ============ FOOTER ============ -->
+  <text x="34" y="1052" class="muted"><tspan fill="#34d399" font-weight="700">PRINCIPLES</tspan>  everything-local-to-SC2 &#183; no-realtime &#183; deterministic-player &#183; async-generative-backfill &#183; fourth-wall-always-on &#183; verify-before-the-library &#183; long-jobs-detached &#183; share-the-box-politely</text>
+  <text x="34" y="1076" class="muted"><tspan fill="#6ee7b7" font-weight="700">BUILT + VERIFIED</tspan>  live text-aside show on SC2 &#183; qwen3 director loop &#183; first portrait RENDERED local (SD1.5) &#183; 6 modules by a 6-agent team: clip graph/player, segment+rig spec, verify gate, feeds+TTL, TTS+visemes, at-logon watchdog</text>
+  <text x="34" y="1100" class="muted"><tspan fill="#f5a524" font-weight="700">NEXT</tspan>  wire stage_render (portrait) + rig.py (animate) into player.py &#183; install SAM / InsightFace / Piper on SC2 &#183; deploy at-logon watchdog &#183; orchestrate producer loop &#183; img2vid bridges &#183; confirm LED mapping on-site</text>
+  <text x="34" y="1124" class="muted"><tspan fill="#7cc0ff" font-weight="700">NOW</tspan>  integration team lp-integrate-3e7a building compositor + rig runtime + producer; director live; portrait done.   <tspan fill="#5b6b7d">projects/living-portraits/living-portraits-architecture-v3.svg &#183; 2026-05-26 &#183; supersedes v2</tspan></text>
+</svg>

@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.venv/
+data/mind/
+data/gen/
+data/clips/_proto/
+*.session
+.env*
+sessions/

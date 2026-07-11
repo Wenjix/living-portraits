@@ -1,0 +1,226 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1160" font-family="'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arr" markerWidth="11" markerHeight="11" refX="7.5" refY="3.5" orient="auto"><path d="M0,0 L8,3.5 L0,7 Z" fill="#7c8aa0"/></marker>
+    <marker id="arrG" markerWidth="11" markerHeight="11" refX="7.5" refY="3.5" orient="auto"><path d="M0,0 L8,3.5 L0,7 Z" fill="#34d399"/></marker>
+    <marker id="arrA" markerWidth="11" markerHeight="11" refX="7.5" refY="3.5" orient="auto"><path d="M0,0 L8,3.5 L0,7 Z" fill="#f5a524"/></marker>
+    <marker id="arrR" markerWidth="11" markerHeight="11" refX="7.5" refY="3.5" orient="auto"><path d="M0,0 L8,3.5 L0,7 Z" fill="#f87171"/></marker>
+    <marker id="arrC" markerWidth="11" markerHeight="11" refX="7.5" refY="3.5" orient="auto"><path d="M0,0 L8,3.5 L0,7 Z" fill="#22d3ee"/></marker>
+    <style>
+      .mono { font-family:'Consolas','SF Mono',Menlo,monospace; }
+      .title { font-size:32px; font-weight:700; fill:#d8a657; }
+      .titlesub { font-size:19px; font-weight:600; fill:#e6edf3; }
+      .note { font-size:13px; fill:#aab8c8; }
+      .zoneh { font-size:13px; font-weight:700; letter-spacing:0.5px; }
+      .lpill { font-size:10.5px; font-weight:700; fill:#0a0e14; }
+      .ct { font-size:13.5px; font-weight:700; fill:#f1f5f9; }
+      .body { font-size:11.5px; fill:#c4d0dd; }
+      .key { font-size:11.5px; fill:#d7e0ea; }
+      .muted { font-size:10.5px; fill:#8896a8; }
+      .chip { font-size:10.5px; font-weight:700; }
+      .flow { font-size:11px; font-weight:600; fill:#9fb0c4; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1920" height="1160" fill="#0a0e14"/>
+
+  <!-- HEADER -->
+  <text x="34" y="50" class="title">LIVING PORTRAITS<tspan class="titlesub" dx="12">/ Architecture (session build + next phase)</tspan></text>
+  <text x="36" y="78" class="note">Self-aware theatrical portraits on two LED panels, free + local on supercommons2. Nothing runs in realtime: a deterministic PLAYER performs pre-baked beats; an async STAGE-MANAGER (qwen3) composes them.</text>
+  <text x="36" y="97" class="note">Legend: <tspan fill="#34d399" font-weight="700">green = built &amp; running today</tspan> &#183; <tspan fill="#f5a524" font-weight="700">amber = next phase</tspan> &#183; <tspan fill="#67e8f9" font-weight="700">cyan = written, deps installing</tspan> &#183; <tspan fill="#c4b5fd" font-weight="700">violet = creative contract</tspan> &#183; <tspan fill="#f87171" font-weight="700">red = pending (off-site)</tspan>.   Reality: live loop running headless on SC2 &#183; LED mapping unconfirmed &#183; gen stack installing.</text>
+
+  <!-- ============ ZONE 1: INPUTS / SIGNALS ============ -->
+  <rect x="32" y="116" width="1480" height="96" rx="12" fill="#0c1118" stroke="#2b3b52" stroke-dasharray="5 4"/>
+  <text x="48" y="138" class="zoneh" fill="#7cc0ff">INPUTS / SIGNALS  (director/signals.py)  &#183;  the "important data" the world reacts to</text>
+  <rect x="48" y="150" width="300" height="52" rx="8" fill="#101722" stroke="#34d399"/>
+  <text x="62" y="172" class="ct">Clock + part-of-day</text><text x="62" y="190" class="muted">morning / evening / the small hours</text>
+  <rect x="362" y="150" width="360" height="52" rx="8" fill="#101722" stroke="#34d399"/>
+  <text x="376" y="172" class="ct">Internal mood drift</text><text x="376" y="190" class="muted mono">data/mood.json &#183; persisted &#183; drifts each beat</text>
+  <rect x="736" y="150" width="728" height="52" rx="8" fill="#101722" stroke="#34d399"/>
+  <rect x="748" y="160" width="74" height="16" rx="8" fill="#f5a524"/><text x="785" y="172" text-anchor="middle" class="lpill">WIRE NEXT</text>
+  <text x="832" y="172" class="ct">External feed</text><text x="832" y="190" class="muted mono">data/feed.json STUB  -&gt;  THE SIGNAL + Google Calendar + weather</text>
+
+  <path d="M772,212 L772,228" stroke="#34d399" stroke-width="2" marker-end="url(#arrG)"/>
+
+  <!-- ============ ZONE 2: DIRECTOR / BRAIN ============ -->
+  <rect x="32" y="230" width="1480" height="150" rx="12" fill="#0b0f17" stroke="#34557a" stroke-dasharray="6 4"/>
+  <text x="48" y="252" class="zoneh" fill="#9ecbff">DIRECTOR / BRAIN  (director/stage_manager.py)  &#183;  qwen3:8b via local Ollama &#183; format=json &#183; /no_think &#183; --loop 45s</text>
+
+  <rect x="48" y="262" width="470" height="106" rx="9" fill="#15101f" stroke="#a78bfa" stroke-width="1.3"/>
+  <rect x="60" y="272" width="120" height="16" rx="8" fill="#a78bfa"/><text x="120" y="284" text-anchor="middle" class="lpill">CONTRACT</text>
+  <text x="60" y="312" class="ct" fill="#c4b5fd">Prompt library (prompts/)</text>
+  <text x="60" y="332" class="key mono">_stage-directives.md  &#183;  the 4th-wall rule</text>
+  <text x="60" y="350" class="muted mono">characters/phineas.md (A) &#183; seraphina.md (B)</text>
+
+  <rect x="534" y="262" width="470" height="106" rx="9" fill="#101722" stroke="#34d399"/>
+  <text x="548" y="286" class="ct">Compose beat</text>
+  <text x="548" y="308" class="body mono">signals + cast  -&gt;  qwen3  -&gt;  JSON beat</text>
+  <text x="548" y="328" class="body mono">schema: scene / A / B / bridge</text>
+  <text x="548" y="350" class="muted">action clamped to a fixed 7-verb vocabulary</text>
+
+  <rect x="1020" y="262" width="444" height="106" rx="9" fill="#101722" stroke="#34d399"/>
+  <rect x="1032" y="272" width="58" height="16" rx="8" fill="#34d399"/><text x="1061" y="284" text-anchor="middle" class="lpill">REUSE</text>
+  <text x="1100" y="284" class="chip" fill="#34d399">already on SC2</text>
+  <text x="1032" y="312" class="ct">Ollama &#183; qwen3:8b</text>
+  <text x="1032" y="332" class="body mono">127.0.0.1:11434 /api/chat</text>
+  <text x="1032" y="350" class="muted">GPU, ~5GB resident &#183; shared with catalog embedder</text>
+
+  <path d="M772,380 L772,396" stroke="#34d399" stroke-width="2" marker-end="url(#arrG)"/>
+  <text x="784" y="392" class="flow mono">beat JSON (atomic tmp + os.replace)</text>
+
+  <!-- ============ ZONE 3: CONTROL CHANNEL ============ -->
+  <rect x="32" y="398" width="1480" height="62" rx="12" fill="#0a1512" stroke="#2f5e4d" stroke-dasharray="6 4"/>
+  <text x="48" y="420" class="zoneh" fill="#6ee7b7">CONTROL CHANNEL  &#183;  the only seam between brain and stage</text>
+  <rect x="540" y="410" width="430" height="40" rx="8" fill="#101722" stroke="#34d399"/>
+  <text x="556" y="430" class="ct mono" fill="#6ee7b7">data/stage_state.json</text><text x="556" y="446" class="muted">player mtime-polls ~2Hz &#183; never reads a half-written file</text>
+
+  <path d="M772,460 L772,476" stroke="#34d399" stroke-width="2" marker-end="url(#arrG)"/>
+
+  <!-- ============ ZONE 4: PLAYER / STAGE ============ -->
+  <rect x="32" y="478" width="1480" height="150" rx="12" fill="#0b0f17" stroke="#34557a" stroke-dasharray="6 4"/>
+  <text x="48" y="500" class="zoneh" fill="#9ecbff">PLAYER / STAGE  (player.py)  &#183;  pygame, borderless 448x256 @ (0,0), interactive console session 1</text>
+
+  <rect x="48" y="510" width="300" height="104" rx="9" fill="#1a0f10" stroke="#d2aa5a"/>
+  <text x="62" y="534" class="ct" fill="#e0c07a">Stage A &#183; 256 x 256</text>
+  <text x="62" y="556" class="body">Phineas frame (maroon)</text>
+  <text x="62" y="576" class="muted">rect (0, 0, 256, 256)</text>
+  <text x="62" y="600" class="muted">renders char + action + aside</text>
+
+  <rect x="364" y="510" width="300" height="104" rx="9" fill="#0c1c1e" stroke="#5ec8be"/>
+  <text x="378" y="534" class="ct" fill="#78ccc2">Stage B &#183; 192 x 192</text>
+  <text x="378" y="556" class="body">Seraphina frame (teal)</text>
+  <text x="378" y="576" class="muted">rect (256, 0, 192, 192)</text>
+  <text x="378" y="600" class="muted">smaller, brighter, quicker wit</text>
+
+  <rect x="680" y="510" width="400" height="104" rx="9" fill="#101722" stroke="#243349"/>
+  <text x="694" y="534" class="ct">Render mode</text>
+  <text x="694" y="556" class="body"><tspan fill="#34d399" font-weight="700">NOW:</tspan> text dev-view (name / action / aside)</text>
+  <text x="694" y="578" class="body"><tspan fill="#f5a524" font-weight="700">NEXT:</tspan> action -&gt; Live2D rig + baked clip</text>
+  <text x="694" y="600" class="muted">same state-consumption shell, swapped renderer</text>
+
+  <rect x="1096" y="510" width="368" height="104" rx="9" fill="#101722" stroke="#34d399"/>
+  <text x="1110" y="534" class="ct">Liveness + fallback</text>
+  <text x="1110" y="556" class="body">moving marker + wall clock</text>
+  <text x="1110" y="578" class="body">test-card fallback if no state</text>
+  <text x="1110" y="600" class="muted">launched by run_player.bat (lp-player /IT)</text>
+
+  <path d="M772,628 L772,644" stroke="#34d399" stroke-width="2" marker-end="url(#arrG)"/>
+  <text x="784" y="640" class="flow mono">framebuffer region (0,0,448x256) of the 1920x1080 desktop</text>
+
+  <!-- ============ ZONE 5: OUTPUT / EDGE ============ -->
+  <rect x="32" y="646" width="1480" height="86" rx="12" fill="#0c1118" stroke="#2b3b52" stroke-dasharray="5 4"/>
+  <text x="48" y="668" class="zoneh" fill="#7cc0ff">OUTPUT / EDGE  &#183;  desktop framebuffer -&gt; LED sending card -&gt; panels</text>
+  <rect x="48" y="678" width="360" height="44" rx="8" fill="#101722" stroke="#34d399"/>
+  <text x="62" y="698" class="key">Framebuffer region (0,0,448x256)</text><text x="62" y="715" class="muted">top-left corner of the 1920x1080 desktop</text>
+  <path d="M408,700 L452,700" stroke="#7c8aa0" stroke-width="1.8" marker-end="url(#arr)"/>
+  <rect x="456" y="678" width="380" height="44" rx="8" fill="#0c131d" stroke="#1f2a3a"/>
+  <text x="470" y="698" class="key">LED sending card (Novastar / Colorlight)</text><text x="470" y="715" class="muted">grabs the region, maps each sub-rect to a panel</text>
+  <path d="M836,700 L880,700" stroke="#7c8aa0" stroke-width="1.8" marker-end="url(#arr)"/>
+  <rect x="884" y="678" width="340" height="44" rx="8" fill="#101722" stroke="#f87171" stroke-width="1.4"/>
+  <rect x="896" y="686" width="118" height="16" rx="8" fill="#f87171"/><text x="955" y="698" text-anchor="middle" class="lpill">CONFIRM PENDING</text>
+  <text x="1020" y="699" class="key">Panel A 256&#178; + Panel B 192&#178;</text>
+  <text x="896" y="717" class="muted">window @ (0,0) is log-proven; LED mapping unverified (Ray off-site)</text>
+
+  <!-- ============ ZONE 6: GENERATIVE PIPELINE (offline / async backfill) ============ -->
+  <rect x="32" y="750" width="1480" height="252" rx="12" fill="#100a14" stroke="#5b4a7a" stroke-dasharray="6 4"/>
+  <text x="48" y="772" class="zoneh" fill="#c4b5fd">GENERATIVE PIPELINE  &#183;  offline / async backfill  &#183;  THE NEXT PHASE: real portraits, rig + clips, verified into a library</text>
+  <text x="360" y="772" class="muted">heavy work on the 2080 Ti, on its own schedule, slow is fine (not realtime)</text>
+
+  <!-- pipeline chain -->
+  <rect x="48" y="786" width="150" height="86" rx="9" fill="#101722" stroke="#34d399"/>
+  <text x="62" y="808" class="ct">prompts/</text><text x="62" y="828" class="body">characters/*</text><text x="62" y="848" class="muted">theme + persona</text><text x="62" y="864" class="muted">(reused)</text>
+  <path d="M198,829 L212,829" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrC)"/>
+
+  <rect x="214" y="786" width="232" height="86" rx="9" fill="#08171b" stroke="#22d3ee" stroke-width="1.4"/>
+  <rect x="226" y="796" width="150" height="16" rx="8" fill="#22d3ee"/><text x="301" y="808" text-anchor="middle" class="lpill">WRITTEN / INSTALLING</text>
+  <text x="226" y="834" class="ct">generate.py</text><text x="226" y="853" class="body mono">SDXL / Flux-GGUF</text><text x="226" y="868" class="muted">cpu-offload to fit 11GB</text>
+  <path d="M446,829 L460,829" stroke="#f5a524" stroke-width="2" marker-end="url(#arrA)"/>
+
+  <rect x="462" y="786" width="198" height="86" rx="9" fill="#1a1208" stroke="#f5a524"/>
+  <rect x="474" y="796" width="42" height="16" rx="8" fill="#f5a524"/><text x="495" y="808" text-anchor="middle" class="lpill">NEXT</text>
+  <text x="474" y="834" class="ct" fill="#f5cf8a">SAM segment</text><text x="474" y="853" class="body">bg plate + cutout</text><text x="474" y="868" class="muted">alpha layer (SAM 3.1)</text>
+  <path d="M660,829 L674,829" stroke="#f5a524" stroke-width="2" marker-end="url(#arrA)"/>
+
+  <rect x="676" y="786" width="190" height="86" rx="9" fill="#1a1208" stroke="#f5a524"/>
+  <rect x="688" y="796" width="42" height="16" rx="8" fill="#f5a524"/><text x="709" y="808" text-anchor="middle" class="lpill">NEXT</text>
+  <text x="688" y="834" class="ct" fill="#f5cf8a">Live2D rig</text><text x="688" y="853" class="body">idle / gaze / blink</text><text x="688" y="868" class="muted">parametric, ~0 GPU</text>
+  <path d="M866,829 L880,829" stroke="#f5a524" stroke-width="2" marker-end="url(#arrA)"/>
+
+  <rect x="882" y="786" width="218" height="86" rx="9" fill="#1a1208" stroke="#f5a524"/>
+  <rect x="894" y="796" width="42" height="16" rx="8" fill="#f5a524"/><text x="915" y="808" text-anchor="middle" class="lpill">NEXT</text>
+  <text x="894" y="834" class="ct" fill="#f5cf8a">img2vid + RIFE</text><text x="894" y="853" class="body">Hunyuan / Wan + interp</text><text x="894" y="868" class="muted">walk + transition bridges</text>
+  <path d="M1100,829 L1114,829" stroke="#f5a524" stroke-width="2" marker-end="url(#arrA)"/>
+
+  <rect x="1116" y="786" width="200" height="86" rx="9" fill="#1c1407" stroke="#f5a524" stroke-width="1.8"/>
+  <rect x="1128" y="796" width="74" height="16" rx="8" fill="#f5a524"/><text x="1165" y="808" text-anchor="middle" class="lpill">VERIFY GATE</text>
+  <text x="1128" y="834" class="ct" fill="#f5cf8a">QA before library</text><text x="1128" y="852" class="muted">SSIM continuity &#183; loopable</text><text x="1128" y="868" class="muted">InsightFace ID &#183; qwen-VL register</text>
+  <path d="M1316,829 L1330,829" stroke="#f5a524" stroke-width="2" marker-end="url(#arrA)"/>
+
+  <rect x="1332" y="786" width="132" height="86" rx="9" fill="#1a1208" stroke="#f5a524"/>
+  <text x="1344" y="810" class="ct" fill="#f5cf8a">CLIP</text><text x="1344" y="828" class="ct" fill="#f5cf8a">LIBRARY</text><text x="1344" y="848" class="muted">graph: nodes</text><text x="1344" y="864" class="muted">= poses, edges</text>
+  <text x="1344" y="879" class="muted" fill="#5b4a7a">= clips (bridge)</text>
+
+  <!-- TTS row -->
+  <rect x="48" y="896" width="470" height="88" rx="9" fill="#1a1208" stroke="#f5a524" stroke-dasharray="4 3"/>
+  <rect x="60" y="906" width="80" height="16" rx="8" fill="#f5a524"/><text x="100" y="918" text-anchor="middle" class="lpill">OPTIONAL</text>
+  <text x="60" y="944" class="ct" fill="#f5cf8a">Spoken asides (TTS + lip-sync)</text>
+  <text x="60" y="964" class="body mono">Piper / Kokoro (free, local)  +  MuseTalk / LivePortrait bake</text>
+  <text x="60" y="980" class="muted">cached audio + visemes per aside &#183; or stay silent-theatre (intertitle cards)</text>
+
+  <!-- clip library feeds the player -->
+  <path d="M1398,786 L1398,656 L1300,656 L1300,628" stroke="#f5a524" stroke-width="1.6" fill="none" stroke-dasharray="5 4" marker-end="url(#arrA)"/>
+  <text x="1130" y="650" class="flow" fill="#f5a524">baked clips -&gt; player (action mapping)</text>
+
+  <!-- ============ RIGHT RAIL: HOST &amp; OPS ============ -->
+  <rect x="1532" y="116" width="356" height="886" rx="12" fill="#0c1014" stroke="#2b3b52" stroke-dasharray="5 4"/>
+  <text x="1548" y="138" class="zoneh" fill="#b8c4d4">HOST &amp; OPS  (supercommons2)</text>
+
+  <rect x="1548" y="150" width="324" height="124" rx="9" fill="#101722" stroke="#34d399"/>
+  <rect x="1560" y="160" width="58" height="16" rx="8" fill="#34d399"/><text x="1589" y="172" text-anchor="middle" class="lpill">REUSE</text>
+  <text x="1560" y="200" class="ct">SC2 box</text>
+  <text x="1560" y="220" class="body">i9-9900K &#183; 64 GB</text>
+  <text x="1560" y="240" class="body">RTX 2080 Ti &#183; 11 GB VRAM</text>
+  <text x="1560" y="262" class="muted">shared with inference-eng catalog</text>
+
+  <rect x="1548" y="284" width="324" height="104" rx="9" fill="#101722" stroke="#34d399"/>
+  <text x="1564" y="308" class="ct">Ollama (shared)</text>
+  <text x="1564" y="330" class="body mono">qwen3:8b  -&gt; director</text>
+  <text x="1564" y="350" class="muted mono">qwen3:14b &#183; nomic-embed (catalog)</text>
+  <text x="1564" y="372" class="muted">GPU budget: 5GB qwen3 + offloaded gen fits 11GB</text>
+
+  <rect x="1548" y="398" width="324" height="120" rx="9" fill="#101722" stroke="#34d399"/>
+  <text x="1564" y="422" class="ct">Scheduled tasks (Win, /IT)</text>
+  <text x="1564" y="444" class="body mono">lp-player    -&gt; console session 1</text>
+  <text x="1564" y="464" class="body mono">lp-director  -&gt; beat loop</text>
+  <text x="1564" y="486" class="muted">launched into the interactive desktop,</text>
+  <text x="1564" y="503" class="muted">not the SSH session</text>
+
+  <rect x="1548" y="528" width="324" height="112" rx="9" fill="#101722" stroke="#334155"/>
+  <text x="1564" y="552" class="ct">Python venvs</text>
+  <text x="1564" y="574" class="key"><tspan fill="#34d399" font-weight="700">.venv</tspan> <tspan class="muted">pygame &#183; opencv &#183; numpy &#183; ffmpeg</tspan></text>
+  <text x="1564" y="596" class="key"><tspan fill="#67e8f9" font-weight="700">.venv-gen</tspan> <tspan class="muted">torch cu121 &#183; diffusers</tspan></text>
+  <text x="1564" y="616" class="muted" fill="#67e8f9">installing in background now</text>
+  <text x="1564" y="634" class="muted">isolated so the catalog env is untouched</text>
+
+  <rect x="1548" y="650" width="324" height="78" rx="9" fill="#1a1208" stroke="#f5a524" stroke-dasharray="4 3"/>
+  <rect x="1560" y="660" width="42" height="16" rx="8" fill="#f5a524"/><text x="1581" y="672" text-anchor="middle" class="lpill">NEXT</text>
+  <text x="1560" y="700" class="ct" fill="#f5cf8a">Self-heal watchdog</text>
+  <text x="1560" y="720" class="muted">funneled-service pattern: auto-restart player + director + worker</text>
+
+  <rect x="1548" y="738" width="324" height="78" rx="9" fill="#1a1208" stroke="#f5a524" stroke-dasharray="4 3"/>
+  <rect x="1560" y="748" width="42" height="16" rx="8" fill="#f5a524"/><text x="1581" y="760" text-anchor="middle" class="lpill">NEXT</text>
+  <text x="1560" y="788" class="ct" fill="#f5cf8a">shared-KV persistence</text>
+  <text x="1560" y="808" class="muted">gallery mood + memory across restarts (today: local JSON)</text>
+
+  <text x="1548" y="846" class="muted">Coexists politely with the catalog:</text>
+  <text x="1548" y="864" class="muted">director sips qwen3 every 45s; heavy</text>
+  <text x="1548" y="882" class="muted">gen is offline + cpu-offloaded; pause</text>
+  <text x="1548" y="900" class="muted">the director during a portrait render.</text>
+  <text x="1548" y="938" class="muted mono" fill="#5b6b7d">immer@100.123.185.12</text>
+  <text x="1548" y="958" class="muted mono" fill="#5b6b7d">Win 11 Pro 26200 &#183; console session 1 active</text>
+
+  <!-- ============ FOOTER ============ -->
+  <text x="34" y="1042" class="muted"><tspan fill="#34d399" font-weight="700">PRINCIPLES</tspan>  no-realtime &#183; deterministic-player &#183; async-generative-backfill &#183; fourth-wall-always-on &#183; verify-before-the-library &#183; free-and-local &#183; share-the-box-politely</text>
+  <text x="34" y="1066" class="muted"><tspan fill="#6ee7b7" font-weight="700">BUILT TODAY (running on SC2)</tspan>  frameless dual-panel player (console session 1) &#183; qwen3 stage-manager on a 45s loop &#183; prompt library (4th-wall + 2 characters) &#183; stage_state.json control channel &#183; lp-player + lp-director tasks &#183; runtime venv</text>
+  <text x="34" y="1090" class="muted"><tspan fill="#f5a524" font-weight="700">NEXT PHASE</tspan>  gen pipeline (SDXL -&gt; SAM -&gt; Live2D rig + img2vid/RIFE -&gt; verify gate -&gt; clip library) &#183; player rig+clip playback &#183; real feed wiring (Signal/calendar/weather) &#183; TTS/lip-sync &#183; self-heal watchdog &#183; shared-KV &#183; confirm LED mapping</text>
+  <text x="34" y="1114" class="muted"><tspan fill="#7cc0ff" font-weight="700">DATA FLOW</tspan>  signals -&gt; stage_manager(qwen3) -&gt; stage_state.json -&gt; player -&gt; framebuffer(0,0,448x256) -&gt; LED card -&gt; Panel A 256&#178; + Panel B 192&#178;.   <tspan fill="#5b6b7d">projects/living-portraits/living-portraits-architecture.svg &#183; 2026-05-26</tspan></text>
+</svg>
