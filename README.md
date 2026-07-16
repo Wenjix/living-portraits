@@ -8,6 +8,7 @@ remember what they just did, and go to sleep at night. This is the open-source
 engine that runs them.
 
 **[Read the full story →](https://www.immersivecommons.com/projects/a-life-in-the-frame)**
+· **[The questions a thinking painting gets asked →](docs/ARTICLE.md)**
 
 ## The two characters, walking their own graphs
 
