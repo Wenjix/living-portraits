@@ -238,3 +238,96 @@ def test_propose_pose_falls_back_to_hub_only_on_bad_link(tmp_path, monkeypatch):
     assert pid
     saved = autogen.load_proposals()["proposals"][0]
     assert saved["extra_links"] == []
+
+
+# --------------------------------------------------------------------------- video takes
+class _FakeClient:
+    """Stands in for the hil-only MJ client. `available` is how many of the 4-up grid's
+    video variants this account actually returns."""
+
+    def __init__(self, available=4):
+        self.available = available
+        self.asked = []
+
+    def download_video(self, job_id, variant=0, out_path=None):
+        self.asked.append(variant)
+        if variant >= self.available:
+            raise RuntimeError("no variant %d on job %s" % (variant, job_id))
+        Path(out_path).parent.mkdir(parents=True, exist_ok=True)
+        Path(out_path).write_bytes(b"mp4")
+
+
+def _stub_gif(monkeypatch, tmp_path):
+    """Skip the real decode (imageio/PIL): just drop a file where the gif would land,
+    creating the parent dir the way the real _mp4_to_gif does."""
+    monkeypatch.setattr(autogen, "MIND", tmp_path / "mind")
+    (tmp_path / "mind").mkdir(parents=True, exist_ok=True)
+
+    def _fake(mp4, gif, **kw):
+        Path(gif).parent.mkdir(parents=True, exist_ok=True)
+        Path(gif).write_bytes(b"gif")
+        return 1
+
+    monkeypatch.setattr(autogen, "_mp4_to_gif", _fake)
+
+
+def test_video_to_gif_pulls_every_paid_for_take(tmp_path, monkeypatch):
+    # MJ bills a 4-up grid; video_graph globs <char>_<label>_v*.gif into one edge row per take.
+    _stub_gif(monkeypatch, tmp_path)
+    client = _FakeClient(available=4)
+    dst = tmp_path / "proto" / "phineas_a2g_v0.gif"
+    landed = autogen._video_to_gif(client, "job1", dst)
+
+    assert landed == 4
+    assert client.asked == [0, 1, 2, 3]
+    assert sorted(p.name for p in (tmp_path / "proto").glob("*.gif")) == [
+        "phineas_a2g_v0.gif", "phineas_a2g_v1.gif", "phineas_a2g_v2.gif", "phineas_a2g_v3.gif"]
+
+
+def test_video_to_gif_degrades_to_one_take_without_raising(tmp_path, monkeypatch):
+    # An account/API that only ever returns one video must behave EXACTLY as before this
+    # change -- the edge still lands, nothing raises, and we stop asking after the first gap.
+    _stub_gif(monkeypatch, tmp_path)
+    client = _FakeClient(available=1)
+    dst = tmp_path / "proto" / "phineas_a2g_v0.gif"
+    landed = autogen._video_to_gif(client, "job1", dst)
+
+    assert landed == 1
+    assert client.asked == [0, 1]                      # asked once more, then gave up
+    assert [p.name for p in (tmp_path / "proto").glob("*.gif")] == ["phineas_a2g_v0.gif"]
+
+
+def test_video_to_gif_still_fails_when_the_edge_itself_is_lost(tmp_path, monkeypatch):
+    # Take 0 IS the edge. Its loss must stay fatal so the caller records no half-built pose.
+    _stub_gif(monkeypatch, tmp_path)
+    client = _FakeClient(available=0)
+    try:
+        autogen._video_to_gif(client, "job1", tmp_path / "proto" / "phineas_a2g_v0.gif")
+    except RuntimeError:
+        return
+    raise AssertionError("a missing variant 0 must raise, not degrade")
+
+
+def test_video_takes_become_interchangeable_edge_rows(tmp_path, monkeypatch):
+    # The whole point: four takes on disk -> four edge rows the walk can pick between.
+    _stub_gif(monkeypatch, tmp_path)
+    # _variant_gifs reports paths relative to the project root, so the fake proto dir has to
+    # live under a root it can subtract -- point BOTH at tmp.
+    monkeypatch.setattr(video_graph, "ROOT", tmp_path)
+    monkeypatch.setattr(video_graph, "PROTO", tmp_path / "proto")
+    autogen._video_to_gif(_FakeClient(available=4), "job1", tmp_path / "proto" / "phineas_a2g_v0.gif")
+
+    found = video_graph._variant_gifs("phineas", "a2g")
+    assert [v for v, _g in found] == [0, 1, 2, 3]
+    assert found[2][1] == "proto/phineas_a2g_v2.gif"
+
+
+def test_video_takes_one_is_the_revert_switch(tmp_path, monkeypatch):
+    # VIDEO_TAKES = 1 must reproduce the pre-change behaviour exactly: one download, one gif.
+    _stub_gif(monkeypatch, tmp_path)
+    client = _FakeClient(available=4)
+    landed = autogen._video_to_gif(client, "job1", tmp_path / "proto" / "phineas_a2g_v0.gif", takes=1)
+
+    assert landed == 1
+    assert client.asked == [0]                         # never even asks for a second variant
+    assert [p.name for p in (tmp_path / "proto").glob("*.gif")] == ["phineas_a2g_v0.gif"]
