@@ -78,6 +78,13 @@ class GraphCycler:
         self._intent_mtime = -1.0
         self._pub_node = None             # last (node, dwell) published -> re-publish when either changes
         self._pub_dwell = -1              # so the heartbeat sees dwell ADVANCE while a character lingers
+        self._reached = None              # the last GOAL this walk actually landed on. The policy walk
+                                          # only WEIGHTS the goal (GOAL_HOLD_BOOST 6.0 in, AWAY_PENALTY
+                                          # 0.15 out) -- it never pins -- so a character can arrive, hold
+                                          # a while, then drift off before the ~4min heartbeat looks.
+                                          # Without this stamp the brain reads "not standing there now"
+                                          # as "never got there" and tells the character it failed at
+                                          # something it did.
         try:
             self._graph_mtime = GRAPH.stat().st_mtime   # for autogen hot-reload
         except OSError:
@@ -148,9 +155,13 @@ class GraphCycler:
         try:
             POSE_DIR.mkdir(parents=True, exist_ok=True)
             tmp = POSE_DIR / (self.character + ".json.tmp")
-            tmp.write_text(json.dumps({
+            payload = {
                 "node": self.node, "dwell": self.pose_dwell, "last_label": self.last_label,
-                "updated": datetime.datetime.now().isoformat(timespec="seconds")}), encoding="utf-8")
+                "updated": datetime.datetime.now().isoformat(timespec="seconds")}
+            if self._reached:
+                payload["reached"] = self._reached   # omitted until we land on one, so an older
+                                                     # walker's file reads as "cannot say", not "failed"
+            tmp.write_text(json.dumps(payload), encoding="utf-8")
             os.replace(tmp, POSE_DIR / (self.character + ".json"))
             self._pub_node = self.node
             self._pub_dwell = self.pose_dwell
@@ -252,6 +263,8 @@ class GraphCycler:
         intent = self._read_intent()
         cobj = (intent.get("characters", {}) or {}).get(self.character) or {}
         goal = mind.goal_for(intent, self.character) if (self.mind_on or self.policy_on) else None
+        if goal and self.node == goal:
+            self._reached = goal          # stamp the arrival the instant we stand on it
         mask = circadian.bedtime_labels(self.spec, self.character)   # keep the daytime walk out of the bedroom
         self._last_ctx_energy = self._context_energy()   # cache for the pick log + feed the policy
         self.cur = policy.choose(

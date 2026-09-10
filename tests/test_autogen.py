@@ -202,7 +202,7 @@ def test_propose_pose_authors_idle_count_and_link(tmp_path, monkeypatch):
     from director import heartbeat
     monkeypatch.setattr(autogen, "PROPOSALS", tmp_path / "proposals.json")
     monkeypatch.setattr(heartbeat.video_graph.VideoGraph, "load", staticmethod(_fake_graph))
-    monkeypatch.setattr(heartbeat, "_current_pose", lambda g, c: ("phineas:anchor", 0))
+    monkeypatch.setattr(heartbeat, "_current_pose", lambda g, c: ("phineas:anchor", 0, None))
     monkeypatch.setattr(heartbeat, "_load_char_spec", lambda c: {})
     monkeypatch.setattr(heartbeat.circadian, "bedtime_poses", lambda spec, c: set())
     monkeypatch.setattr(heartbeat.mj_safe, "check",
@@ -225,7 +225,7 @@ def test_propose_pose_falls_back_to_hub_only_on_bad_link(tmp_path, monkeypatch):
     from director import heartbeat
     monkeypatch.setattr(autogen, "PROPOSALS", tmp_path / "proposals.json")
     monkeypatch.setattr(heartbeat.video_graph.VideoGraph, "load", staticmethod(_fake_graph))
-    monkeypatch.setattr(heartbeat, "_current_pose", lambda g, c: ("phineas:anchor", 0))
+    monkeypatch.setattr(heartbeat, "_current_pose", lambda g, c: ("phineas:anchor", 0, None))
     monkeypatch.setattr(heartbeat, "_load_char_spec", lambda c: {})
     monkeypatch.setattr(heartbeat.circadian, "bedtime_poses", lambda spec, c: set())
     monkeypatch.setattr(heartbeat.mj_safe, "check",

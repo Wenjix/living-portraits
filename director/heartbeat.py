@@ -39,7 +39,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from director import context as ctx, llm, mj_safe
-from runtime import circadian, pathfind, video_graph
+from runtime import circadian, mind, pathfind, video_graph
 
 try:                                   # optional, fail-open telemetry (no-op if absent/off)
     from director import otel
@@ -70,6 +70,15 @@ BEDTIME_SPEC = ROOT / "prompts" / "bedtime_routine.json"
 DEFAULT_INTERVAL = 240.0     # ~4 min awake cadence
 NIGHT_INTERVAL = 900.0       # 15 min when everyone's asleep (circadian owns the body)
 JOURNAL_TAIL = 5             # recent monologue lines fed back as context
+
+# --- URGENCY: which way the body goes there. policy.ROUTE_PULL turns this into the goal-gradient
+# multiplier -- "beeline" 7.0 (go there NOW, ~47:1 toward-goal) vs "wander" 2.0 (drift there
+# scenically, ~13:1). Both are built and tested; nothing ever wrote the key, so every goal walk on
+# the wall has been a wander. DEFAULT_ROUTE is that shipped behaviour, so an unparseable answer
+# changes nothing.
+ROUTES = ("beeline", "wander")
+DEFAULT_ROUTE = "wander"
+_BEELINE_WORDS = ("beeline", "now", "urgent", "hurry", "straight", "direct", "immediate", "at once")
 PROSE_MODEL = "glm-5.1"      # GLM 5.2-class for CREATIVE pose/voice authorship (was glm-4.6).
                              # Per-tick decisions also run glm-5.1 via DEFAULT_MODEL now. If the
                              # heartbeat feels slow, revert ticks to "glm-4.5-air" (fast) in llm.py.
@@ -180,14 +189,17 @@ def _hub(graph, character):
 
 
 def _current_pose(graph, character):
+    """(node, dwell, reached) from the walker's own pose file. `reached` is the last goal the walk
+    actually landed on, or None when the walker never published one (an older walker, or it has not
+    arrived anywhere yet) -- see _arrival, which treats that as "cannot say"."""
     try:
         d = json.loads((POSE_DIR / (character + ".json")).read_text(encoding="utf-8"))
         node = d.get("node")
         if node in graph.nodes:
-            return node, int(d.get("dwell", 0))
+            return node, int(d.get("dwell", 0)), d.get("reached")
     except Exception:
         pass
-    return _hub(graph, character), 0
+    return _hub(graph, character), 0, None
 
 
 def _pose_label(graph, node):
@@ -210,13 +222,67 @@ def _journal_tail(character, n=JOURNAL_TAIL):
     except Exception:
         return []
     out = []
-    for ln in lines[-n:]:
+    # Read a WIDER window and filter, because an `err` line records that a tick happened while the
+    # brain never answered: it keeps the memory clock honest for auditing, but it is not something
+    # the character THOUGHT, so it must never enter its own inner monologue.
+    for ln in lines[-(n * 4):]:
         try:
             d = json.loads(ln)
-            out.append("- (%s, feeling %s) %s" % (d.get("pose", "?"), d.get("mood", "?"), d.get("reason", "")))
         except Exception:
             continue
-    return out
+        if d.get("err"):
+            continue
+        # `arrived is False` is the only case worth saying out loud -- absent/True read as normal.
+        thwarted = " -- and did not get there" if d.get("arrived") is False else ""
+        out.append("- (%s, feeling %s) %s%s" % (d.get("pose", "?"), d.get("mood", "?"),
+                                                d.get("reason", ""), thwarted))
+    return out[-n:]
+
+
+def _norm_route(raw):
+    """The model's free-text urgency -> one of policy.ROUTE_PULL's keys. Same tolerant cascade as
+    policy._mood_bias: exact match, then a keyword scan, then the safe default -- because a model
+    asked how urgently it wants something says "desperately", not "beeline"."""
+    s = str(raw or "").strip().lower()      # str(): a model asked for "urgency" may answer 7
+    if s in ROUTES:
+        return s
+    return "beeline" if any(w in s for w in _BEELINE_WORDS) else DEFAULT_ROUTE
+
+
+def _as_text(v):
+    """One field of the model's reply -> a plain string. complete_json hands back whatever
+    json.loads produced, so any key can arrive as an int, list or dict; an unguarded .strip() or
+    set-lookup here would abort the WHOLE tick, discarding the other character's good decision and
+    writing no intent at all -- the exact silent brain-death the err journal line exists to prevent."""
+    if isinstance(v, str):
+        return v
+    return "" if v is None else str(v)
+
+
+def _arrival(prev, node, reached=None, now=None):
+    """Did the character reach the goal it was chasing? True/False, or None when the question is
+    unanswerable -- and staying SILENT matters, because this ends up in the character's own monologue.
+
+    None when: nothing was set (first tick / released character); the previous goal had already aged
+    past mind.DEFAULT_MAX_AGE, so the walker released it and no one was pursuing it; or the walker
+    published no `reached` stamp and we are not standing on the goal, in which case we genuinely
+    cannot tell whether it arrived and drifted off (the policy walk only weights the goal, it never
+    pins) or never made it at all. Accusing it of failure on that evidence would be a lie."""
+    goal = (prev or {}).get("goal")
+    if not goal:
+        return None
+    set_at = (prev or {}).get("set_at")
+    if set_at is not None:
+        try:
+            if (time.time() if now is None else now) - float(set_at) > mind.DEFAULT_MAX_AGE:
+                return None
+        except (TypeError, ValueError):
+            pass
+    if node == goal:
+        return True                     # standing on it -- unambiguous
+    if reached is None:
+        return None                     # walker cannot answer -> say nothing
+    return reached == goal
 
 
 def _append_journal(character, entry):
@@ -258,29 +324,34 @@ def _build_user_prompt(graph, character, node, dwell, goals, hour):
         "Choose your next pose -- follow your mood and whims, and don't keep doing the same thing. "
         "Reply with ONLY this JSON:\n"
         '{"goal": "<one node id from the list>", "mood": "<one or two words>", '
+        '"urgency": "<usually wander -- drift there in your own time; beeline only when you truly cannot wait>", '
         '"reason": "<one short first-person line, in your own unmistakable voice -- the way only you would say it>"}'
     ) % (situational, node, _pose_label(graph, node), dwell, jtxt, menu, node)
 
 
-def decide_character(graph, spec_bedtime, character, hour, model, dry_run, log):
-    """Sense + think for one character. Returns (goal_node, mood) -- goal None releases the
-    character to circadian/normal walk; mood feeds the walker's policy so the body reflects it.
+def decide_character(graph, spec_bedtime, character, hour, model, dry_run, log, prev=None):
+    """Sense + think for one character. Returns (goal_node, mood, route) -- goal None releases the
+    character to circadian/normal walk; mood feeds the walker's policy so the body reflects it, and
+    route says how hard the goal gradient pulls. `prev` is this character's PREVIOUS intent entry,
+    which is how we learn whether it actually got where it last said it was going.
     Writes the journal unless dry_run."""
-    node, dwell = _current_pose(graph, character)
+    node, dwell, reached = _current_pose(graph, character)
     if node is None:
         log("  %s: no poses in graph, skip" % character)
-        return None, None
+        return None, None, None
 
     # NIGHT belongs to circadian -- back off and write no goal.
     if circadian.is_night(spec_bedtime, character, hour):
         log("  %s: night (circadian owns the body) -> no goal" % character)
-        return None, None
+        return None, None, None
 
     goals = sorted(pathfind.reachable_poses(graph.edges, node)
                    - circadian.bedtime_poses(spec_bedtime, character))
     if not goals:
         log("  %s: nowhere to go from %s -> no goal" % (character, node))
-        return None, None
+        return None, None, None
+
+    arrived = _arrival(prev, node, reached)
 
     spec = _load_char_spec(character)
     name, ident = _identity_block(character, spec)
@@ -295,22 +366,39 @@ def decide_character(graph, spec_bedtime, character, hour, model, dry_run, log):
         except llm.LLMError as e:
             sp.set(**{"lp.outcome": "llm_error", "lp.error": str(e)[:200]})
             log("  %s: LLM error (%s) -> keep previous intent" % (character, e))
-            return "__keep__", None   # sentinel: don't overwrite a good prior goal on a transient blip
+            if not dry_run:
+                # Journal the SILENCE. Without this a flaky gateway freezes the character's memory
+                # clock while the body keeps walking -- the panels look perfect and the brain is
+                # reading a monologue with an invisible hole in it (the same class of bug M2 caught
+                # with `dwell`). Marked err so _journal_tail keeps it out of the monologue itself.
+                gap = {"ts": int(time.time()), "pose": node, "goal": (prev or {}).get("goal") or node,
+                       "mood": "", "reason": "", "err": 1}
+                if arrived is not None:
+                    gap["arrived"] = arrived
+                _append_journal(character, gap)
+            return "__keep__", None, None   # sentinel: don't overwrite a good prior goal on a blip
 
-        goal = (out or {}).get("goal", "")
-        mood = (out or {}).get("mood", "")
-        reason = (out or {}).get("reason", "")
+        # Coerce EVERY field: the reply is arbitrary JSON and a crash here kills the whole tick.
+        goal = _as_text((out or {}).get("goal"))
+        mood = _as_text((out or {}).get("mood"))
+        reason = _as_text((out or {}).get("reason"))
+        route = _norm_route((out or {}).get("urgency"))
         allowed = set(goals) | {node}
         if goal not in allowed:
             sp.set(**{"lp.rejected_goal": goal})
             log("  %s: model picked %r (not offered) -> staying at %s" % (character, goal, node))
             goal = node
-        sp.set(**{"lp.goal": goal, "lp.mood": mood, "lp.outcome": "decided"})
-        log("  %s wants %s  [%s] -- %s" % (name, goal, mood, reason))
+        sp.set(**{"lp.goal": goal, "lp.mood": mood, "lp.route": route,
+                  "lp.arrived": arrived, "lp.outcome": "decided"})
+        log("  %s wants %s  [%s/%s]%s -- %s" % (
+            name, goal, mood, route, "" if arrived is not False else " (did not reach the last one)", reason))
         if not dry_run:
-            _append_journal(character, {"ts": int(time.time()), "pose": node, "goal": goal,
-                                        "mood": mood, "reason": reason})
-        return goal, mood
+            entry = {"ts": int(time.time()), "pose": node, "goal": goal,
+                     "mood": mood, "reason": reason, "route": route}
+            if arrived is not None:
+                entry["arrived"] = arrived
+            _append_journal(character, entry)
+        return goal, mood, route
 
 
 def _slug(s):
@@ -370,7 +458,7 @@ def propose_pose(character, model, dry_run, log, max_pending=8):
     generate -- a human approves, then the autogen worker spends the credits."""
     from pipeline import autogen
     graph = video_graph.VideoGraph.load()
-    node, _ = _current_pose(graph, character)
+    node, _dwell, _reached = _current_pose(graph, character)
     if node is None:
         return None
     hub = node.split(":", 1)[1] if ":" in node else "anchor"
@@ -512,7 +600,9 @@ def tick(characters, model, dry_run, log):
 
         all_night = True
         for ch in characters:
-            goal, mood = decide_character(graph, bedtime, ch, hour, model, dry_run, log)
+            prev = intent["characters"].get(ch)      # last tick's goal -> did the body get there?
+            goal, mood, route = decide_character(graph, bedtime, ch, hour, model, dry_run, log,
+                                                 prev=prev)
             if goal == "__keep__":
                 all_night = False
                 continue
@@ -522,6 +612,8 @@ def tick(characters, model, dry_run, log):
                 entry = {"goal": goal, "set_at": time.time()}
                 if mood:
                     entry["mood"] = mood             # the walker's policy bends the body to this mood
+                if route:
+                    entry["route"] = route           # ...and how hard the goal gradient pulls
                 intent["characters"][ch] = entry
                 all_night = False
 
