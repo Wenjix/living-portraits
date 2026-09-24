@@ -4,7 +4,7 @@ The slow brain that gives the portraits a life. Each tick, per character:
 
   SENSE  where am I now (pose/<char>.json, written by the walker) + time of day +
          my recent inner monologue (journal) + the poses I could walk to next.
-  THINK  GLM-4.5-air (via director/llm.py -> IC z.ai gateway) picks ONE goal pose,
+  THINK  GLM-5.1 (via director/llm.py -> IC z.ai gateway; local qwen3 on fallback) picks ONE goal pose,
          in character, with a mood + a one-line reason.
   ACT    write data/mind/intent.json (the SOLE writer) -> the walker's mind.py layer
          pathfinds there step by step. Append the line to the character's journal.

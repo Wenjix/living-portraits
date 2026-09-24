@@ -30,7 +30,7 @@ Legend: [LP-*] = Living Portraits repo. [RAG-*] = life/research. [ASIMOV-*] = Re
 ### [LP-HEARTBEAT] The heartbeat memory loop (AUTONOMY.md)
 - An LLM "heartbeat" gives each portrait a life: `director/heartbeat.py` is the slow brain that runs sense, then think, then write.
   - sense: pulls real-world context (see [LP-CONTEXT]) plus each character's recent pose state and journal.
-  - think: a single GLM decision (model glm-4.5-air) picks a goal pose for the character.
+  - think: a single GLM decision (model glm-5.1) picks a goal pose for the character.
   - write: writes `data/mind/intent.json` (the goal) and appends one line to `data/mind/journal/<char>.jsonl` (the character's inner monologue, fed back next tick).
 - The walker reads the graph and the intent: `runtime/mind.py:decide()` runs `runtime/pathfind.py:next_step()` (a BFS over the transition edges) to find the next single hop toward the goal, forces that one transition, lands one pose closer, and asks again. A visible step-by-step walk. At the goal it pins on idle loops.
 - THE GRAPH IS THE MEMORY the loop reads and writes: the heartbeat reads pose state + journal and writes intent; the walker reads intent + the graph and writes pose state. Single-writer per file, no races. All writes atomic (tmp + os.replace). [LP-HEARTBEAT]
@@ -51,8 +51,9 @@ Legend: [LP-*] = Living Portraits repo. [RAG-*] = life/research. [ASIMOV-*] = Re
 - Fail-soft by contract: it swallows ALL failure (no token, network down, non-2xx, bad JSON) and returns an empty string, never raising. No network at import time. TTL-cached to `data/mind/context.json` (15 min TTL) so almost every ~4-min tick is served from cache with zero network. A dead source just omits the clause; it can NEVER break a heartbeat tick. [LP-CONTEXT]
 
 ### [LP-BRAIN] The brain (AUTONOMY.md)
-- Model: glm-4.5-air (fast, cheap, right for a per-tick decision; glm-4.6 available for richer Phase-2 prompts).
-- Path: `director/llm.py` posts to the IC z.ai gateway (Anthropic Messages shape) with an IC-minted `agt_` proxy key that carries ZERO IC tool scopes, so it is safe on an unattended host. The gateway holds the real Z.ai org key and meters a weekly token budget. [LP-BRAIN]
+- Model: glm-5.1 (`director/llm.py` DEFAULT_MODEL; the IC gateway serves glm-5.1 as GLM 5.2 class). `director/heartbeat.py` PROSE_MODEL is also glm-5.1, for the richer Phase-2 generation prompts. A separate cheap judge runs glm-4.5-air (`director/voice_eval.py` JUDGE_MODEL). Verified 2026-09-10; earlier drafts of this file said glm-4.5-air, which was the per-tick model before glm-5.1.
+- Path: `director/llm.py` posts to the IC z.ai gateway (Anthropic Messages shape) with an IC-minted `agt_` proxy key that carries ZERO IC tool scopes, so it is safe on an unattended host. The gateway holds the real Z.ai org key and meters a weekly token budget.
+- Fallback: the brain is z.ai first, with a LOCAL qwen3:8b via Ollama as an automatic fallback, so a gateway outage never blanks the show. Env flags make the local model primary (`LP_LLM_LOCAL_FIRST`) or exclusive (`LP_LLM_LOCAL_ONLY`). [LP-BRAIN]
 
 ### [LP-DEPLOY] Where it runs (README.md + AUTONOMY.md)
 - Runs unattended on a dedicated host (referred to as "hil" in the autonomy deploy runbook); the original player box is supercommons2 (i9-9900K / 64GB / RTX 2080 Ti).

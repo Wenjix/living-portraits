@@ -79,6 +79,10 @@ OREF_WEIGHT = 160             # --ow for the identity lock (keeps the face, free
 # --oref (omni-reference) requires MJ v7. The account default moved to v8.1, which
 # rejects --oref ("`--oref` is not compatible with `--version 8.1`") -> every still
 # submit failed (166 dead proposals, 2026-06-17). Pin v7 so --oref works again.
+# STILL TRUE 2026-09-10: MJ is on v8.2 and --oref/--ow remain v7-only. Bumping this is
+# NOT a version bump -- it swaps the identity mechanism too, against 59 nodes / 500 edges
+# of shipped footage, and a v7->v8 still pair renders the face change AS MOTION. Read
+# MODEL_STACK.md sections 2, 4 and 5 before touching this line.
 IMAGINE_VERSION = "7"
 POLL_TIMEOUT = 600            # seconds to wait for one FAST MJ job
 RELAX_TIMEOUT = 1800          # a RELAX still can sit in the slow queue -> give it up to 30 min
