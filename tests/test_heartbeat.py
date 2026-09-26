@@ -93,18 +93,27 @@ def test_route_exact_values_pass_through():
     assert hb._norm_route("  BEELINE ") == "beeline"
 
 
-def test_route_keyword_cascade_catches_natural_answers():
-    # a model asked how urgently it wants something does not answer "beeline"
-    for phrase in ("desperately, now", "at once", "I must go immediately", "straight there"):
-        assert hb._norm_route(phrase) == "beeline", phrase
+def test_route_ambiguous_answers_default_to_wander():
+    for phrase in ("not urgent", "no hurry", "wander for now", "unknown", "indirect",
+                   "desperately, now", "at once", "I must go immediately", "straight there",
+                   "wander or beeline", "beeline only when you truly cannot wait"):
+        assert hb._norm_route(phrase) == "wander", phrase
+
+
+def test_route_prompt_echo_defaults_to_wander(monkeypatch, tmp_path):
+    _offline(monkeypatch, tmp_path)
+    prompt = hb._build_user_prompt(_Graph(), "phineas", "phineas:anchor", 0,
+                                   ["phineas:glower"], 14)
+    schema = json.loads(prompt.split("Reply with ONLY this JSON:\n", 1)[1])
+    assert hb._norm_route(schema["urgency"]) == "wander"
 
 
 def test_route_survives_a_non_string_answer():
     # "urgency" is the field most likely to make a model answer on a 1-10 scale, and an
     # unguarded .strip() here aborts the WHOLE tick -- discarding the other character's good
     # decision and writing no intent at all. policy._mood_bias coerces with str() for this reason.
-    for raw in (7, 0, True, False, 0.5, ["urgent"], {"a": 1}):
-        assert hb._norm_route(raw) in hb.ROUTES, raw
+    for raw in (7, 0, True, False, 0.5, ["urgent"], ["beeline"], {"urgency": "beeline"}):
+        assert hb._norm_route(raw) == "wander", raw
 
 
 def test_as_text_flattens_whatever_json_hands_back():
@@ -140,13 +149,25 @@ def test_arrival_stays_silent_when_the_walker_cannot_say():
     assert hb._arrival({"goal": "phineas:glower", "set_at": now - 60}, "phineas:anchor") is None
 
 
-def test_arrival_uses_the_walkers_reached_stamp():
+def test_arrival_uses_the_walkers_pursuit_record():
     now = time.time()
     prev = {"goal": "phineas:glower", "set_at": now - 60}
     # arrived, held a while, then drifted back to anchor -> still an arrival
-    assert hb._arrival(prev, "phineas:anchor", reached="phineas:glower") is True
-    # the last place it landed was somewhere else -> it really did not get there
-    assert hb._arrival(prev, "phineas:anchor", reached="phineas:swoon") is False
+    assert hb._arrival(prev, "phineas:anchor", dict(prev, arrived=True)) is True
+    assert hb._arrival(prev, "phineas:anchor", dict(prev, arrived=False)) is False
+
+
+def test_arrival_ignores_unscoped_or_mismatched_records():
+    now = time.time()
+    prev = {"goal": "phineas:glower", "set_at": now - 60}
+    for receipt in ("phineas:glower", "phineas:swoon", {},
+                    dict(prev, set_at=now - 120, arrived=True),
+                    dict(prev, goal="phineas:anchor", arrived=True),
+                    dict(prev, arrived=None), dict(prev, arrived="true")):
+        assert hb._arrival(prev, "phineas:anchor", receipt) is None, receipt
+    # Even a pose file still standing on the goal belongs to the old pursuit.
+    old = dict(prev, set_at=now - 120, arrived=True)
+    assert hb._arrival(prev, "phineas:glower", old) is None
 
 
 def test_arrival_is_silent_once_the_goal_outlived_the_walkers_ttl():
@@ -172,12 +193,26 @@ def test_journal_tail_never_shows_the_character_its_own_silence(monkeypatch, tmp
 def test_journal_tail_marks_a_goal_the_body_did_not_reach(monkeypatch, tmp_path):
     monkeypatch.setattr(hb, "JOURNAL_DIR", tmp_path / "journal")
     hb._append_journal("phineas", {"pose": "anchor", "mood": "thwarted",
-                                   "reason": "I meant to be elsewhere.", "arrived": False})
+                                   "reason": "I will stay here.",
+                                   "outcome": {"goal": "phineas:glower", "set_at": 10,
+                                               "arrived": False}})
     hb._append_journal("phineas", {"pose": "glower", "mood": "smug",
-                                   "reason": "And here I am.", "arrived": True})
+                                   "reason": "And here I am.",
+                                   "outcome": {"goal": "phineas:glower", "set_at": 20,
+                                               "arrived": True}})
     tail = hb._journal_tail("phineas")
-    assert "did not get there" in tail[0]
+    outcome_line, thought_line = tail[0].splitlines()
+    assert "phineas:glower" in outcome_line and "did not get there" in outcome_line
+    assert "I will stay here." in thought_line and "did not get there" not in thought_line
     assert "did not get there" not in tail[1]
+
+
+def test_journal_tail_ignores_legacy_outcomes_with_no_goal_identity(monkeypatch, tmp_path):
+    monkeypatch.setattr(hb, "JOURNAL_DIR", tmp_path / "journal")
+    hb._append_journal("phineas", {"pose": "anchor", "goal": "phineas:anchor",
+                                   "mood": "calm", "reason": "I will stay here.",
+                                   "arrived": False})
+    assert "did not get there" not in hb._journal_tail("phineas")[0]
 
 
 def test_journal_tail_still_returns_at_most_n_after_filtering(monkeypatch, tmp_path):
@@ -194,15 +229,15 @@ def test_decide_records_route_and_arrival(monkeypatch, tmp_path):
     _offline(monkeypatch, tmp_path,
              reply={"goal": "phineas:glower", "mood": "restless",
                     "urgency": "beeline", "reason": "Enough of this wall."})
-    # asked for glower; the walker last landed on anchor, so it really did not get there
-    _pose(tmp_path, "phineas:anchor", reached="phineas:anchor")
     prev = {"goal": "phineas:glower", "set_at": time.time() - 60}
+    _pose(tmp_path, "phineas:anchor", pursuit=dict(prev, arrived=False))
     goal, mood, route = hb.decide_character(_Graph(), {}, "phineas", 14, "m", False, _log, prev=prev)
 
     assert (goal, mood, route) == ("phineas:glower", "restless", "beeline")
     line = _journal(tmp_path)[-1]
     assert line["route"] == "beeline"
-    assert line["arrived"] is False
+    assert line["outcome"] == dict(prev, arrived=False)
+    assert "arrived" not in line
 
 
 def test_decide_omits_arrived_when_there_was_no_prior_goal(monkeypatch, tmp_path):
@@ -211,18 +246,21 @@ def test_decide_omits_arrived_when_there_was_no_prior_goal(monkeypatch, tmp_path
     hb.decide_character(_Graph(), {}, "phineas", 14, "m", False, _log, prev=None)
     line = _journal(tmp_path)[-1]
     assert "arrived" not in line             # silent, not a guess
+    assert "outcome" not in line
     assert line["route"] == "wander"         # no urgency offered -> the shipped default
 
 
 def test_llm_error_keeps_the_intent_but_never_the_silence(monkeypatch, tmp_path):
     _offline(monkeypatch, tmp_path, error=True)
     prev = {"goal": "phineas:glower", "set_at": time.time() - 60}
+    _pose(tmp_path, "phineas:anchor", pursuit=dict(prev, arrived=True))
     goal, mood, route = hb.decide_character(_Graph(), {}, "phineas", 14, "m", False, _log, prev=prev)
 
     assert goal == "__keep__"                # the walker keeps the last good goal
     line = _journal(tmp_path)[-1]
     assert line["err"] == 1                  # ...but the memory clock still ticked
     assert line["goal"] == "phineas:glower"
+    assert line["outcome"] == dict(prev, arrived=True)
     assert hb._journal_tail("phineas") == []  # and the character never reads its own outage
 
 
@@ -256,7 +294,7 @@ def test_a_structured_goal_degrades_instead_of_raising(monkeypatch, tmp_path):
 def test_tick_publishes_route_into_intent(monkeypatch, tmp_path):
     _offline(monkeypatch, tmp_path,
              reply={"goal": "phineas:glower", "mood": "restless",
-                    "urgency": "at once", "reason": "Now."})
+                    "urgency": "beeline", "reason": "Now."})
     monkeypatch.setattr(hb.video_graph.VideoGraph, "load", staticmethod(lambda *a, **k: _Graph()))
     monkeypatch.setattr(hb, "_ensure_player", lambda *a, **k: None)
     # tick() reads the wall clock, and at night circadian owns the body and the heartbeat

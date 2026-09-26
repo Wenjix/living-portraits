@@ -76,15 +76,12 @@ class GraphCycler:
         self._last_ctx_energy = None          # last weather/time energy band applied (traced in the pick log)
         self._intent = {}                 # cached intent.json, re-read on mtime change
         self._intent_mtime = -1.0
-        self._pub_node = None             # last (node, dwell) published -> re-publish when either changes
+        self._pub_node = None             # last pose/pursuit published -> re-publish when any changes
         self._pub_dwell = -1              # so the heartbeat sees dwell ADVANCE while a character lingers
-        self._reached = None              # the last GOAL this walk actually landed on. The policy walk
-                                          # only WEIGHTS the goal (GOAL_HOLD_BOOST 6.0 in, AWAY_PENALTY
-                                          # 0.15 out) -- it never pins -- so a character can arrive, hold
-                                          # a while, then drift off before the ~4min heartbeat looks.
-                                          # Without this stamp the brain reads "not standing there now"
-                                          # as "never got there" and tells the character it failed at
-                                          # something it did.
+        self._pub_pursuit = None
+        self._pursuit = None              # {goal, set_at, arrived}: arrivals belong to ONE intent,
+                                          # including when the same pose is requested again.
+        self._intent_seen = False        # a restarted walker cannot reconstruct earlier arrivals
         try:
             self._graph_mtime = GRAPH.stat().st_mtime   # for autogen hot-reload
         except OSError:
@@ -144,27 +141,43 @@ class GraphCycler:
             self._intent_mtime = m
         return self._intent
 
+    def _track_pursuit(self):
+        """Retain arrival while drifting, but reset it when the goal's identity changes."""
+        intent = self._read_intent()
+        cobj = (intent.get("characters", {}) or {}).get(self.character) or {}
+        goal = mind.goal_for(intent, self.character)
+        set_at = cobj.get("set_at")
+        if goal and set_at is not None:
+            if (self._pursuit is None or self._pursuit["goal"] != goal
+                    or self._pursuit["set_at"] != set_at):
+                self._pursuit = {"goal": goal, "set_at": set_at,
+                                 "arrived": False if self._intent_seen else None}
+            if self.node == goal:
+                self._pursuit["arrived"] = True
+        else:
+            self._pursuit = None          # released, expired, or no identity to match reliably
+        self._intent_seen = True
+
     def _publish_pose(self):
         """Tell the heartbeat where this character is now AND how long it has lingered.
         Sole writer of its own pose file (per-character path -> no cross-panel race);
-        atomic tmp+replace. Re-publishes when the node OR the dwell count changes, so the
-        heartbeat's 'you have lingered N moments' reflects real time spent at the pose
-        (publishing on node-change alone pinned dwell at 0 -> the brain was pacing blind)."""
-        if self._pub_node == self.node and self._pub_dwell == self.pose_dwell:
+        atomic tmp+replace. Also re-publishes pursuit changes even while standing still:
+        a new intent must not inherit the previous intent's arrival record."""
+        if (self._pub_node == self.node and self._pub_dwell == self.pose_dwell
+                and self._pub_pursuit == self._pursuit):
             return
         try:
             POSE_DIR.mkdir(parents=True, exist_ok=True)
             tmp = POSE_DIR / (self.character + ".json.tmp")
             payload = {
                 "node": self.node, "dwell": self.pose_dwell, "last_label": self.last_label,
-                "updated": datetime.datetime.now().isoformat(timespec="seconds")}
-            if self._reached:
-                payload["reached"] = self._reached   # omitted until we land on one, so an older
-                                                     # walker's file reads as "cannot say", not "failed"
+                "updated": datetime.datetime.now().isoformat(timespec="seconds"),
+                "pursuit": self._pursuit}
             tmp.write_text(json.dumps(payload), encoding="utf-8")
             os.replace(tmp, POSE_DIR / (self.character + ".json"))
             self._pub_node = self.node
             self._pub_dwell = self.pose_dwell
+            self._pub_pursuit = dict(self._pursuit) if self._pursuit is not None else None
         except Exception as e:
             print("pose publish failed: %r" % e, flush=True)
 
@@ -211,6 +224,8 @@ class GraphCycler:
             if homes:
                 self.node = homes[0]
                 out = self._from(self.node)
+        if self.mind_on or self.policy_on:
+            self._track_pursuit()
         if self.policy_on:
             return self._pick_policy(out)     # unified weighted walk (replaces the layered branches)
         dec = circadian.decide(self.spec, self.character, self.node, out,
@@ -263,8 +278,6 @@ class GraphCycler:
         intent = self._read_intent()
         cobj = (intent.get("characters", {}) or {}).get(self.character) or {}
         goal = mind.goal_for(intent, self.character) if (self.mind_on or self.policy_on) else None
-        if goal and self.node == goal:
-            self._reached = goal          # stamp the arrival the instant we stand on it
         mask = circadian.bedtime_labels(self.spec, self.character)   # keep the daytime walk out of the bedroom
         self._last_ctx_energy = self._context_energy()   # cache for the pick log + feed the policy
         self.cur = policy.choose(
