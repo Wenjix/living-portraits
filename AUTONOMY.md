@@ -97,8 +97,14 @@ chooses melodrama, MAXX chooses flexing — in character.
 
 ## The brain — z.ai / GLM
 
-- **Model:** `glm-4.5-air` (fast + cheap, right for a per-tick decision; `glm-4.6` available
-  for richer prose like Phase-2 generation prompts).
+- **Model:** `glm-5.1` for both the per-tick decision (`director/llm.py` `DEFAULT_MODEL`) and the
+  richer Phase-2 prose (`director/heartbeat.py` `PROSE_MODEL`); the IC gateway serves `glm-5.1` as
+  GLM-5.2-class. A separate cheap judge stays on `glm-4.5-air` (`director/voice_eval.py`
+  `JUDGE_MODEL`, `max_tokens=8`). Was `glm-4.5-air` / `glm-4.6`. **Do not bump to `glm-5.3`**
+  without reading `MODEL_STACK.md` first: reasoning cannot be disabled there, it bills as output,
+  and whether it works over the Anthropic Messages shape at all is unresolved.
+- **Local fallback:** `qwen3:8b` via Ollama, automatic when z.ai is unreachable; `LP_LLM_LOCAL_FIRST`
+  makes it primary and `LP_LLM_LOCAL_ONLY` air-gaps the show entirely.
 - **Path:** `director/llm.py` → `POST https://immersivecommons13.tail5da903.ts.net/v1/messages`
   (Anthropic Messages shape) with an IC-minted `agt_` proxy key. The gateway holds the real
   Z.ai org key and meters a weekly token budget; our key carries **zero IC tool scopes**, so

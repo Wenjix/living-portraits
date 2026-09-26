@@ -79,6 +79,10 @@ OREF_WEIGHT = 160             # --ow for the identity lock (keeps the face, free
 # --oref (omni-reference) requires MJ v7. The account default moved to v8.1, which
 # rejects --oref ("`--oref` is not compatible with `--version 8.1`") -> every still
 # submit failed (166 dead proposals, 2026-06-17). Pin v7 so --oref works again.
+# STILL TRUE 2026-09-10: MJ is on v8.2 and --oref/--ow remain v7-only. Bumping this is
+# NOT a version bump -- it swaps the identity mechanism too, against 59 nodes / 500 edges
+# of shipped footage, and a v7->v8 still pair renders the face change AS MOTION. Read
+# MODEL_STACK.md sections 2, 4 and 5 before touching this line.
 IMAGINE_VERSION = "7"
 POLL_TIMEOUT = 600            # seconds to wait for one FAST MJ job
 RELAX_TIMEOUT = 1800          # a RELAX still can sit in the slow queue -> give it up to 30 min
@@ -338,7 +342,7 @@ def generate_one(p, *, dry_run=False, log=print):
                                              motion_prompt=p.get("transition_motion", ""),
                                              loop=False, mode=VIDEO_MODE))
             _wait(client, tj, timeout=VIDEO_TIMEOUT)
-            _video_to_gif(client, tj, fwd_gif)
+            _video_to_gif(client, tj, fwd_gif, log=log)
             log("  transition %s generated" % fwd)
         else:
             log("  resume: reuse transition %s" % fwd)
@@ -351,7 +355,7 @@ def generate_one(p, *, dry_run=False, log=print):
             rj = _job_id(client.submit_video(image_url=new_url, end_image=hub_url,
                                              motion_prompt=rmotion, loop=False, mode=VIDEO_MODE))
             _wait(client, rj, timeout=VIDEO_TIMEOUT)
-            _video_to_gif(client, rj, rev_gif)
+            _video_to_gif(client, rj, rev_gif, log=log)
             log("  reverse %s generated (real new->hub clip)" % rev)
         else:
             log("  resume: reuse reverse %s" % rev)
@@ -360,7 +364,7 @@ def generate_one(p, *, dry_run=False, log=print):
             ij = _job_id(client.submit_video(image_url=new_url, loop=True,
                                              motion_prompt=idle.get("motion", ""), mode=VIDEO_MODE))
             _wait(client, ij, timeout=VIDEO_TIMEOUT)
-            _video_to_gif(client, ij, PROTO / ("%s_%s_v0.gif" % (char, idle["id"])))
+            _video_to_gif(client, ij, PROTO / ("%s_%s_v0.gif" % (char, idle["id"])), log=log)
             log("  idle %s generated" % idle["id"])
         # 5. EXTRA sibling links -- the structural fix: connect the new pose to a nearby pose
         #    too, so leaves interlink and the hub-and-spoke STAR meshes into a WEB. Each is a
@@ -401,16 +405,47 @@ def _download(client, url, out_path):
     os.replace(tmp, out_path)
 
 
-def _video_to_gif(client, video_job_id, gif_path):
-    tmp_mp4 = MIND / ("_dl_%s.mp4" % video_job_id)
-    client.download_video(video_job_id, variant=0, out_path=str(tmp_mp4))
-    try:
-        _mp4_to_gif(str(tmp_mp4), str(gif_path))
-    finally:
+# MJ bills a 4-up video grid, and the four variants of ONE job are interchangeable TAKES of the
+# same motion. video_graph._variant_gifs() globs <char>_<label>_v*.gif and emits one edge row per
+# take, so the walk picks a different take each time it plays that edge -- which is exactly why a
+# pose whose breathing visibly varies reads alive instead of looped. Pulling only variant 0 threw
+# away three quarters of what the account had ALREADY been charged for: 168 of the graph's 251
+# label-triples carry a single take while the 83 hand-baked ones carry four.
+VIDEO_TAKES = 4
+
+
+def _video_to_gif(client, video_job_id, gif_path, takes=VIDEO_TAKES, log=None):
+    """Download the job's variants to <...>_v0.gif .. _v<takes-1>.gif and return how many landed.
+
+    Take 0 IS the edge -- losing it fails the caller, exactly as before. Takes 1..n-1 are free
+    variety: an API or account that only ever returns one video degrades to today's single-take
+    behaviour with a log line and no exception, and we stop asking after the first gap rather than
+    hammering a job that has no more variants."""
+    base = str(gif_path)
+    outs = [(0, base)]
+    if base.endswith("_v0.gif"):                       # every caller passes the _v0 path
+        stem = base[:-len("_v0.gif")]
+        outs += [(v, "%s_v%d.gif" % (stem, v)) for v in range(1, max(1, takes))]
+    landed = 0
+    for v, out_gif in outs:
+        tmp_mp4 = MIND / ("_dl_%s_v%d.mp4" % (video_job_id, v))
         try:
-            tmp_mp4.unlink()
-        except Exception:
-            pass
+            client.download_video(video_job_id, variant=v, out_path=str(tmp_mp4))
+            _mp4_to_gif(str(tmp_mp4), str(out_gif))
+            landed += 1
+        except Exception as e:
+            if v == 0:
+                raise                                  # the edge itself -- fatal, unchanged
+            if log:
+                log("  takes: %d/%d for %s (variant %d unavailable: %r)"
+                    % (landed, len(outs), Path(base).name, v, e))
+            break                                      # no more variants on this job
+        finally:
+            try:
+                tmp_mp4.unlink()
+            except Exception:
+                pass
+    return landed
 
 
 def _rebuild_graph(log=print):
@@ -449,7 +484,7 @@ def _generate_extra_links(client, g, char, label, new_url, extra_links, log):
                 j = _job_id(client.submit_video(image_url=sib_url, end_image=new_url,
                                                 motion_prompt=el.get("motion", ""), loop=False, mode=VIDEO_MODE))
                 _wait(client, j, timeout=VIDEO_TIMEOUT)
-                _video_to_gif(client, j, lfwd_gif)
+                _video_to_gif(client, j, lfwd_gif, log=log)
                 log("  extra link %s generated" % lfwd)
             if need_rev:
                 rmot = (el.get("reverse_motion") or "").strip() or (
@@ -457,7 +492,7 @@ def _generate_extra_links(client, g, char, label, new_url, extra_links, log):
                 j = _job_id(client.submit_video(image_url=new_url, end_image=sib_url,
                                                 motion_prompt=rmot, loop=False, mode=VIDEO_MODE))
                 _wait(client, j, timeout=VIDEO_TIMEOUT)
-                _video_to_gif(client, j, lrev_gif)
+                _video_to_gif(client, j, lrev_gif, log=log)
                 log("  extra link %s generated" % lrev)
             recorded.append({"sibling": sib, "label": lfwd, "reverse_label": lrev,
                              "motion": el.get("motion", "")})
